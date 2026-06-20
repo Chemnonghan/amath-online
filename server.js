@@ -78,3 +78,20 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`เซิร์ฟเวอร์เอแม็ทออนไลน์ทำงานแล้วที่พอร์ต ${PORT}`);
 });
+// ... โค้ดเดิมด้านบนคงไว้ทั้งหมด ...
+
+    // เมื่อมีผู้เล่นกดข้ามเทิร์น (Pass)
+    socket.on('pass-turn', (data) => {
+        gameState.activePlayer = data.nextPlayer;
+        io.emit('update-game', gameState);
+    });
+
+    // 🔥 เพิ่มฟังก์ชันดักรับสลับเทิร์นจากการเปลี่ยนเบี้ย
+    socket.on('exchange-turn', (data) => {
+        gameState.activePlayer = data.nextPlayer;
+        io.emit('update-game', gameState);
+    });
+
+    // เมื่อผู้เล่นหลุดการเชื่อมต่อ
+    socket.on('disconnect', () => {
+// ... โค้ดเดิมด้านล่างคงไว้ทั้งหมด ...
