@@ -20,12 +20,16 @@ app.get('/', (req, res) => {
 const rooms = {};
 
 // ฟังก์ชันสร้างสถานะเริ่มต้นของห้องใหม่
+// ... โค้ดเดิมด้านบนคงไว้ทั้งหมด ...
+
+// ฟังก์ชันสร้างสถานะเริ่มต้นของห้องใหม่
 function createInitialRoomState() {
     return {
         board: Array(15).fill(null).map(() => Array(15).fill({ hasTile: false, val: '' })),
         scores: { 1: 0, 2: 0 },
         activePlayer: 1,
-        players: {} // socket.id => playerNumber
+        players: {}, 
+        history: [] // 🔥 เพิ่มฟิลด์สำหรับเก็บประวัติกิจกรรมของห้องนี้
     };
 }
 
@@ -33,15 +37,13 @@ io.on('connection', (socket) => {
     console.log(`มีผู้เล่นเชื่อมต่อ: ${socket.id}`);
     let currentRoomId = null;
 
-    // 🔥 ดักรับ Event เมื่อผู้เล่นกรอก ID ห้องเข้ามา
     socket.on('join-room', (roomId) => {
         if (!roomId) return;
         roomId = roomId.trim();
         
         currentRoomId = roomId;
-        socket.join(roomId); // นำ Socket เข้าสู่ห้องที่ระบุ
+        socket.join(roomId);
 
-        // ถ้าห้องยังไม่เคยถูกสร้าง ให้สร้างห้องใหม่ขึ้นมาก่อน
         if (!rooms[roomId]) {
             rooms[roomId] = createInitialRoomState();
         }
@@ -59,12 +61,15 @@ io.on('connection', (socket) => {
         if (assignedPlayer) {
             gameState.players[socket.id] = assignedPlayer;
             socket.emit('assign-player', { role: assignedPlayer, roomId: roomId });
+            
+            // 🔥 บันทึกประวัติเมื่อมีผู้เล่นเข้าร่วมห้อง
+            gameState.history.push(`เข้าร่วม: Player ${assignedPlayer} ได้เข้าสู่ห้องแข่งขัน`);
             console.log(`Socket ${socket.id} เข้าห้อง [${roomId}] ได้เป็น Player ${assignedPlayer}`);
         } else {
-            socket.emit('assign-player', { role: 'viewer', roomId: roomId }); // เป็นผู้ชม
+            socket.emit('assign-player', { role: 'viewer', roomId: roomId });
+            gameState.history.push(`ผู้ชม: มีผู้เล่นเข้ามารับชมเกม`);
         }
 
-        // ส่งสถานะกระดานให้กับคนในห้องนั้นๆ เท่านั้น
         io.to(roomId).emit('update-game', gameState);
     });
 
@@ -72,10 +77,14 @@ io.on('connection', (socket) => {
     socket.on('submit-turn', (data) => {
         if (!currentRoomId || !rooms[currentRoomId]) return;
         const gameState = rooms[currentRoomId];
+        const pNum = gameState.players[socket.id] || 1;
         
         gameState.board = data.board;
         gameState.scores = data.scores;
         gameState.activePlayer = data.nextPlayer;
+
+        // 🔥 บันทึกประวัติการส่งสมการพร้อมคะแนนที่ได้รับ
+        gameState.history.push(`🎯 เทิร์นที่ผ่านมา: Player ${pNum} วางสมการสำเร็จ ได้ +${data.scoreEarned} แต้ม`);
 
         io.to(currentRoomId).emit('update-game', gameState);
     });
@@ -83,15 +92,29 @@ io.on('connection', (socket) => {
     // เมื่อผู้เล่นกดข้ามเทิร์น (Pass)
     socket.on('pass-turn', (data) => {
         if (!currentRoomId || !rooms[currentRoomId]) return;
-        rooms[currentRoomId].activePlayer = data.nextPlayer;
-        io.to(currentRoomId).emit('update-game', rooms[currentRoomId]);
+        const gameState = rooms[currentRoomId];
+        const pNum = gameState.players[socket.id] || 1;
+        
+        gameState.activePlayer = data.nextPlayer;
+        
+        // 🔥 บันทึกประวัติการข้ามเทิร์น
+        gameState.history.push(`💤 ข้ามเทิร์น: Player ${pNum} เลือกกดข้ามเทิร์น (Pass)`);
+
+        io.to(currentRoomId).emit('update-game', gameState);
     });
 
     // เมื่อผู้เล่นเปลี่ยนเบี้ยลงถุง
     socket.on('exchange-turn', (data) => {
         if (!currentRoomId || !rooms[currentRoomId]) return;
-        rooms[currentRoomId].activePlayer = data.nextPlayer;
-        io.to(currentRoomId).emit('update-game', rooms[currentRoomId]);
+        const gameState = rooms[currentRoomId];
+        const pNum = gameState.players[socket.id] || 1;
+        
+        gameState.activePlayer = data.nextPlayer;
+        
+        // 🔥 บันทึกประวัติการเปลี่ยนเบี้ย
+        gameState.history.push(`🔄 เปลี่ยนเบี้ย: Player ${pNum} เปลี่ยนเบี้ยในมือ ${data.count} ตัว และข้ามเทิร์น`);
+
+        io.to(currentRoomId).emit('update-game', gameState);
     });
 
     // เมื่อผู้เล่นหลุดการเชื่อมต่อ
@@ -99,18 +122,23 @@ io.on('connection', (socket) => {
         console.log(`ผู้เล่นออกจากการเชื่อมต่อ: ${socket.id}`);
         if (currentRoomId && rooms[currentRoomId]) {
             const gameState = rooms[currentRoomId];
+            const pNum = gameState.players[socket.id];
             delete gameState.players[socket.id];
             
-            // ถ้าไม่มีใครอยู่ในห้องนั้นแล้ว ให้ลบห้องทิ้งเพื่อประหยัดแรมเซิร์ฟเวอร์
             if (Object.keys(gameState.players).length === 0) {
                 delete rooms[currentRoomId];
                 console.log(`ลบห้อง [${currentRoomId}] เนื่องจากไม่มีผู้เล่นเหลืออยู่`);
             } else {
+                if (pNum) {
+                    // 🔥 บันทึกประวัติเมื่อผู้เล่นหลุดการเชื่อมต่อ
+                    gameState.history.push(`❌ ขาดการติดต่อ: Player ${pNum} ออกจากห้องหรือหลุดการเชื่อมต่อ`);
+                }
                 io.to(currentRoomId).emit('update-game', gameState);
             }
         }
     });
 });
+
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
