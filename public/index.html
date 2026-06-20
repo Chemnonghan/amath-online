@@ -401,95 +401,150 @@
         });
 
         function submitTurn() {
-            if (activePlayer !== myPlayerNumber) return;
-            if (currentTurnPlaced.length === 0) return;
+    if (activePlayer !== myPlayerNumber) return;
+    if (currentTurnPlaced.length === 0) return;
 
-            let rows = currentTurnPlaced.map(t => parseInt(t.row));
-            let cols = currentTurnPlaced.map(t => parseInt(t.col));
-            let isHorizontal = rows.every(r => r === rows[0]);
-            let isVertical = cols.every(c => c === cols[0]);
+    // 1. ตรวจสอบเบื้องต้นว่าวางเป็นเส้นตรงเดียวกันหรือไม่
+    let rows = currentTurnPlaced.map(t => parseInt(t.row));
+    let cols = currentTurnPlaced.map(t => parseInt(t.col));
+    let isHorizontal = rows.every(r => r === rows[0]);
+    let isVertical = cols.every(c => c === cols[0]);
 
-            if (!isHorizontal && !isVertical) { alert("❌ ต้องวางเบี้ยเป็นแนวเส้นตรงเดียวกัน!"); recallTiles(); return; }
+    if (!isHorizontal && !isVertical) { 
+        alert("❌ ต้องวางเบี้ยเป็นแนวเส้นตรงเดียวกัน!"); 
+        recallTiles(); 
+        return; 
+    }
 
-            let dir = 'horizontal';
-            if (currentTurnPlaced.length === 1) {
-                let r = rows[0], c = cols[0];
-                let hasHorizNeighbor = (c > 0 && document.getElementById(`cell-${r}-${c-1}`).classList.contains('has-tile')) || (c < 14 && document.getElementById(`cell-${r}-${c+1}`).classList.contains('has-tile'));
-                let hasVertNeighbor = (r > 0 && document.getElementById(`cell-${r-1}-${c}`).classList.contains('has-tile')) || (r < 14 && document.getElementById(`cell-${r+1}-${c}`).classList.contains('has-tile'));
-                if (hasVertNeighbor && !hasHorizNeighbor) dir = 'vertical';
-            } else if (isVertical) { dir = 'vertical'; }
+    // 2. หาแนวทิศทางหลักของการวาง (Horizontal หรือ Vertical)
+    let dir = 'horizontal';
+    if (currentTurnPlaced.length === 1) {
+        let r = rows[0], c = cols[0];
+        let hasHorizNeighbor = (c > 0 && document.getElementById(`cell-${r}-${c-1}`).classList.contains('has-tile')) ||
+                              (c < 14 && document.getElementById(`cell-${r}-${c+1}`).classList.contains('has-tile'));
+        let hasVertNeighbor = (r > 0 && document.getElementById(`cell-${r-1}-${c}`).classList.contains('has-tile')) ||
+                             (r < 14 && document.getElementById(`cell-${r+1}-${c}`).classList.contains('has-tile'));
+        if (hasVertNeighbor && !hasHorizNeighbor) dir = 'vertical';
+    } else if (isVertical) {
+        dir = 'vertical';
+    }
 
-            let totalTurnScore = 0;
-            let baseR = rows[0]; let baseC = cols[0];
+    let totalTurnScore = 0;
+    let baseR = rows[0];
+    let baseC = cols[0];
 
-            let mainLineCells = [];
-            if (dir === 'horizontal') {
-                let startC = baseC; while (startC > 0 && document.getElementById(`cell-${baseR}-${startC-1}`).classList.contains('has-tile')) startC--;
-                let endC = baseC; while (endC < 14 && document.getElementById(`cell-${baseR}-${endC+1}`).classList.contains('has-tile')) endC++;
-                for (let c = startC; c <= endC; c++) mainLineCells.push({ row: baseR, col: c });
-            } else {
-                let startR = baseR; while (startR > 0 && document.getElementById(`cell-${startR-1}-${baseC}`).classList.contains('has-tile')) startR--;
-                let endR = baseR; while (endR < 14 && document.getElementById(`cell-${endR+1}-${baseC}`).classList.contains('has-tile')) endR++;
-                for (let r = startR; r <= endR; r++) mainLineCells.push({ row: r, col: baseC });
+    // ==========================================
+    // ส่วนที่ A: คำนวณคะแนนจาก "เส้นหลัก" (Main Line)
+    // ==========================================
+    let mainLineCells = [];
+    if (dir === 'horizontal') {
+        let startC = baseC;
+        while (startC > 0 && document.getElementById(`cell-${baseR}-${startC-1}`).classList.contains('has-tile')) startC--;
+        let endC = baseC;
+        while (endC < 14 && document.getElementById(`cell-${baseR}-${endC+1}`).classList.contains('has-tile')) endC++;
+        for (let c = startC; c <= endC; c++) mainLineCells.push({ row: baseR, col: c });
+    } else {
+        let startR = baseR;
+        while (startR > 0 && document.getElementById(`cell-${startR-1}-${baseC}`).classList.contains('has-tile')) startR--;
+        let endR = baseR;
+        while (endR < 14 && document.getElementById(`cell-${endR+1}-${baseC}`).classList.contains('has-tile')) endR++;
+        for (let r = startR; r <= endR; r++) mainLineCells.push({ row: r, col: baseC });
+    }
+
+    let mainLineSum = 0;
+    let mainLineEqMultiplier = 1;
+
+    mainLineCells.forEach(cellPos => {
+        let cellEl = document.getElementById(`cell-${cellPos.row}-${cellPos.col}`);
+        let val = cellEl.querySelector('.val').innerText;
+        let basePt = getTilePoint(val);
+
+        // โบนัสสนามจะคิด "เฉพาะเบี้ยที่เพิ่งวางลงไปใหม่ในเทิร์นนี้" เท่านั้น
+        let isNew = currentTurnPlaced.some(t => parseInt(t.row) === cellPos.row && parseInt(t.col) === cellPos.col);
+        if (isNew) {
+            let cellType = cellEl.dataset.cellType;
+            // 🔥 แก้ไขสาย String ตรงนี้ให้ตรงกับข้อมูลที่มาจาก getCellType() จริงๆ
+            if (cellType === '3x-num') basePt *= 3;
+            else if (cellType === '2x-num') basePt *= 2;
+            else if (cellType === '3x-eq') mainLineEqMultiplier *= 3;
+            else if (cellType === '2x-eq' || cellType === 'star') mainLineEqMultiplier *= 2;
+        }
+        mainLineSum += basePt;
+    });
+    totalTurnScore += (mainLineSum * mainLineEqMultiplier);
+
+    // ==========================================
+    // ส่วนที่ B: คำนวณคะแนนจาก "สมการแนวตัด" (Cross Equations)
+    // ==========================================
+    currentTurnPlaced.forEach(newTile => {
+        let r = parseInt(newTile.row);
+        let c = parseInt(newTile.col);
+        let crossCells = [];
+
+        if (dir === 'horizontal') {
+            let startR = r;
+            while (startR > 0 && document.getElementById(`cell-${startR-1}-${c}`).classList.contains('has-tile')) startR--;
+            let endR = r;
+            while (endR < 14 && document.getElementById(`cell-${endR+1}-${c}`).classList.contains('has-tile')) endR++;
+            if (startR !== endR) {
+                for (let currR = startR; currR <= endR; currR++) crossCells.push({ row: currR, col: c });
             }
+        } else {
+            let startC = c;
+            while (startC > 0 && document.getElementById(`cell-${r}-${startC-1}`).classList.contains('has-tile')) startC--;
+            let endC = c;
+            while (endC < 14 && document.getElementById(`cell-${r}-${endC+1}`).classList.contains('has-tile')) endC++;
+            if (startC !== endC) {
+                for (let currC = startC; currC <= endC; currC++) crossCells.push({ row: r, col: currC });
+            }
+        }
 
-            let mainLineSum = 0; let mainLineEqMultiplier = 1;
-            mainLineCells.forEach(cellPos => {
+        if (crossCells.length > 0) {
+            let crossSum = 0;
+            let crossEqMultiplier = 1;
+
+            crossCells.forEach(cellPos => {
                 let cellEl = document.getElementById(`cell-${cellPos.row}-${cellPos.col}`);
                 let val = cellEl.querySelector('.val').innerText;
                 let basePt = getTilePoint(val);
-                let isNew = currentTurnPlaced.some(t => parseInt(t.row) === cellPos.row && parseInt(t.col) === cellPos.col);
-                if (isNew) {
+
+                if (cellPos.row === r && cellPos.col === c) {
                     let cellType = cellEl.dataset.cellType;
-                    if (cellType === 'x3-num') basePt *= 3;
-                    else if (cellType === 'x2-num') basePt *= 2;
-                    else if (cellType === 'x3-eq') mainLineEqMultiplier *= 3;
-                    else if (cellType === 'x2-eq' || cellType === 'star') mainLineEqMultiplier *= 2;
+                    // 🔥 แก้ไขตรงส่วนแนวตัดให้ตรงกันด้วยครับ
+                    if (cellType === '3x-num') basePt *= 3;
+                    else if (cellType === '2x-num') basePt *= 2;
+                    else if (cellType === '3x-eq') crossEqMultiplier *= 3;
+                    else if (cellType === '2x-eq' || cellType === 'star') crossEqMultiplier *= 2;
                 }
-                mainLineSum += basePt;
+                crossSum += basePt;
             });
-            totalTurnScore += (mainLineSum * mainLineEqMultiplier);
+            totalTurnScore += (crossSum * crossEqMultiplier);
+        }
+    });
 
-            currentTurnPlaced.forEach(newTile => {
-                let r = parseInt(newTile.row); let c = parseInt(newTile.col); let crossCells = [];
-                if (dir === 'horizontal') {
-                    let startR = r; while (startR > 0 && document.getElementById(`cell-${startR-1}-${c}`).classList.contains('has-tile')) startR--;
-                    let endR = r; while (endR < 14 && document.getElementById(`cell-${endR+1}-${c}`).classList.contains('has-tile')) endR++;
-                    if (startR !== endR) { for (let currR = startR; currR <= endR; currR++) crossCells.push({ row: currR, col: c }); }
-                } else {
-                    let startC = c; while (startC > 0 && document.getElementById(`cell-${r}-${startC-1}`).classList.contains('has-tile')) startC--;
-                    let endC = c; while (endC < 14 && document.getElementById(`cell-${r}-${endC+1}`).classList.contains('has-tile')) endC++;
-                    if (startC !== endC) { for (let currC = startC; currC <= endC; currC++) crossCells.push({ row: r, col: currC }); }
-                }
-                if (crossCells.length > 0) {
-                    let crossSum = 0; let crossEqMultiplier = 1;
-                    crossCells.forEach(cellPos => {
-                        let cellEl = document.getElementById(`cell-${cellPos.row}-${cellPos.col}`);
-                        let val = cellEl.querySelector('.val').innerText;
-                        let basePt = getTilePoint(val);
-                        if (cellPos.row === r && cellPos.col === c) {
-                            let cellType = cellEl.dataset.cellType;
-                            if (cellType === 'x3-num') basePt *= 3;
-                            else if (cellType === 'x2-num') basePt *= 2;
-                            else if (cellType === 'x3-eq') crossEqMultiplier *= 3;
-                            else if (cellType === 'x2-eq' || cellType === 'star') crossEqMultiplier *= 2;
-                        }
-                        crossSum += basePt;
-                    });
-                    totalTurnScore += (crossSum * crossEqMultiplier);
-                }
-            });
+    // 3. รวมคะแนนเข้าสู่ระบบและแจ้งผู้เล่น
+    scores[myPlayerNumber] += totalTurnScore;
+    alert(`🎉 คุณได้คะแนนในเทิร์นนี้: ${totalTurnScore} แต้ม!`);
 
-            scores[myPlayerNumber] += totalTurnScore;
-            alert(`🎉 คุณได้คะแนนในเทิร์นนี้: ${totalTurnScore} แต้ม!`);
+    // 4. ส่งข้อมูลกระดานและแต้มที่อัปเดตขึ้น Server คลาวด์
+    let exportBoard = Array(15).fill(null).map((_, r) => Array(15).fill(null).map((_, c) => {
+        const cell = document.getElementById(`cell-${r}-${c}`);
+        return {
+            hasTile: cell.classList.contains('has-tile'),
+            val: cell.classList.contains('has-tile') ? cell.querySelector('.val').innerText : ''
+        };
+    }));
 
-            let exportBoard = Array(15).fill(null).map((_, r) => Array(15).fill(null).map((_, c) => {
-                const cell = document.getElementById(`cell-${r}-${c}`);
-                return {
-                    hasTile: cell.classList.contains('has-tile'),
-                    val: cell.classList.contains('has-tile') ? cell.querySelector('.val').innerText : ''
-                };
-            }));
+    socket.emit('submit-turn', {
+        board: exportBoard,
+        scores: scores,
+        nextPlayer: myPlayerNumber === 1 ? 2 : 1,
+        scoreEarned: totalTurnScore
+    });
+
+    currentTurnPlaced = [];
+    fillRack();
+}
 
             // 🔥 ส่ง scoreEarned แนบขึ้นคลาวด์ไปอัปเดตใส่ประวัติเล่นเกม
             socket.emit('submit-turn', {
