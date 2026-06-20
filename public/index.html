@@ -63,6 +63,7 @@
             background: linear-gradient(135deg, #ffffff 0%, var(--tile-bg) 100%);
             border-bottom: 3px solid #d97706; border-radius: 4px;
             display: flex; align-items: center; justify-content: center; color: var(--tile-text);
+            transition: transform 0.1s;
         }
         .tile-obj .val { font-size: 1.15rem; font-weight: 800; }
         .cell .tile-obj .val { font-size: 0.95rem; }
@@ -71,11 +72,19 @@
         #rack-container { width: 100%; max-width: 440px; background-color: var(--bg-card); padding: 12px; border-radius: 16px; }
         #rack { display: flex; justify-content: space-between; gap: 4px; height: 52px; }
         .tile-slot { flex: 1; height: 100%; aspect-ratio: 4 / 5; background-color: #1e293b; border: 1px dashed #475569; border-radius: 4px; }
+        
+        /* สไตล์ตอนเลือกวางปกติ และ ตอนเลือกเพื่อเปลี่ยนลงถุง */
         #rack .tile-obj.selected { transform: translateY(-10px); border: 2px solid #10b981; }
-        #controls { display: flex; gap: 8px; width: 100%; max-width: 440px; }
-        .btn { flex: 1; padding: 14px 8px; border: none; border-radius: 12px; font-size: 0.9rem; font-weight: bold; color: white; background: linear-gradient(135deg, #10b981 0%, #059669 100%); text-align: center; }
+        #rack .tile-obj.swap-intent { transform: translateY(-8px); border: 2px solid #ef4444; background: #fee2e2; }
+
+        #controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; max-width: 440px; }
+        .btn { padding: 14px 4px; border: none; border-radius: 12px; font-size: 0.8rem; font-weight: bold; color: white; background: linear-gradient(135deg, #10b981 0%, #059669 100%); text-align: center; cursor: pointer; }
         .btn.recall { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
         .btn.pass { background: linear-gradient(135deg, #64748b 0%, #475569 100%); }
+        .btn.exchange { background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); }
+        .btn.exchange.active { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); animation: pulse 1s infinite; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -113,23 +122,24 @@
     </div>
 
     <div id="controls">
-        <button class="btn pass" onclick="passTurn()">ข้ามเทิร์น</button>
-        <button class="btn recall" onclick="recallTiles()">เรียกเบี้ยคืน</button>
+        <button class="btn pass" onclick="passTurn()">ข้าม</button>
+        <button class="btn exchange" id="btn-exchange" onclick="handleExchangeClick()">เปลี่ยนเบี้ย</button>
+        <button class="btn recall" onclick="recallTiles()">เรียกคืน</button>
         <button class="btn" onclick="submitTurn()">ส่งสมการ</button>
     </div>
 
     <script>
-        // เปลี่ยน URL เป็น IP เครื่องคอมพิวเตอร์ของคุณครูเวลาเปิดบอร์ดเล่นกับนักเรียน
         const socket = io(window.location.origin || 'http://localhost:3000');
 
         const board = document.getElementById('board');
-        let myPlayerNumber = null; // บ่งบอกว่าตัวเราคือ Player 1, 2 หรือผู้ชม
+        let myPlayerNumber = null; 
         let activePlayer = 1;
         let scores = { 1: 0, 2: 0 };
         
         let selectedTileSlot = null;
         let selectedValue = null;
         let currentTurnPlaced = []; 
+        let isExchangeMode = false; // 🔥 ตัวแปรควบคุมโหมดสลับเบี้ยลงถุง
 
         const tilePool = ['0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','+','-','x','÷','='];
 
@@ -161,7 +171,6 @@
             return { class: '', text: '', type: 'normal' };
         }
 
-        // วาดกระดานเริ่มต้น
         for (let r = 0; r < 15; r++) {
             for (let c = 0; c < 15; c++) {
                 const cell = document.createElement('div');
@@ -175,11 +184,9 @@
                 if (cellInfo.class) { cell.classList.add(cellInfo.class); cell.innerText = cellInfo.text; }
 
                 cell.addEventListener('click', () => {
-                    // ป้องกันการเดินหมาก: ถ้าไม่ใช่ตาของคุณ หรือคุณเป็นคนดู จะกดไม่ได้
-                    if (activePlayer !== myPlayerNumber) {
-                        alert("ไม่ใช่เทิร์นของคุณชั่วคราวครับ โปรดรอคู่แข่งเดินหมาก");
-                        return;
-                    }
+                    if (activePlayer !== myPlayerNumber) { alert("ไม่ใช่เทิร์นของคุณครับ"); return; }
+                    if (isExchangeMode) { alert("❌ อยู่ในโหมดเปลี่ยนเบี้ย กรุณากดเลือกเบี้ยที่แท่นด้านล่างครับ"); return; }
+                    
                     if (selectedValue !== null && !cell.classList.contains('has-tile')) {
                         const originalInfo = { text: cell.innerText, html: cell.innerHTML, classes: [...cell.classList] };
                         cell.innerHTML = createTileHTML(selectedValue);
@@ -216,9 +223,17 @@
             });
         }
 
+        // 🔥 ปรับปรุงระบบเลือกเบี้ยเพื่อรองรับทั้งการวางและเลือกเปลี่ยนลงถุง
         function selectTile(slotElement, value) {
             const tileObj = slotElement.querySelector('.tile-obj');
             if (!tileObj) return;
+
+            if (isExchangeMode) {
+                // ถ้าอยู่ในโหมดเปลี่ยนเบี้ย จะเป็นการเปิด-ปิดไฮไลต์สีแดงเพื่อเตรียมเปลี่ยนตัว
+                tileObj.classList.toggle('swap-intent');
+                return;
+            }
+
             const previouslySelected = document.querySelector('.tile-obj.selected');
             if (previouslySelected) previouslySelected.classList.remove('selected');
             if (selectedTileSlot === slotElement) { selectedTileSlot = null; selectedValue = null; return; }
@@ -227,6 +242,9 @@
         }
 
         function recallTiles() {
+            // ถ้ายกเลิกเบี้ย ให้ยกเลิกโหมดเปลี่ยนเบี้ยด้วยเพื่อความปลอดภัย
+            if (isExchangeMode) cancelExchangeMode();
+
             currentTurnPlaced.forEach(item => {
                 item.cellElement.innerHTML = '';
                 item.cellElement.classList.remove('has-tile');
@@ -237,8 +255,66 @@
             currentTurnPlaced = []; selectedValue = null; selectedTileSlot = null;
         }
 
-        // ================ ระบบการเชื่อมต่อและดักรับ Event Online ================
-        
+        // 🔥 ฟังก์ชันการทำงานของโหมดเปลี่ยนเบี้ย
+        function handleExchangeClick() {
+            if (activePlayer !== myPlayerNumber) return;
+            
+            if (currentTurnPlaced.length > 0) {
+                alert("❌ ต้องกดปุ่ม 'เรียกคืน' เพื่อนำเบี้ยออกจากกระดานก่อนเลือกเปลี่ยนลงถุงครับ");
+                return;
+            }
+
+            const btn = document.getElementById('btn-exchange');
+
+            if (!isExchangeMode) {
+                // 1. เปิดโหมดเลือกเปลี่ยนเบี้ย
+                isExchangeMode = true;
+                btn.innerText = "ยืนยัน (เลือก)";
+                btn.classList.add('active');
+                
+                // ล้างค่าการเลือกเบี้ยไปวางปกติ
+                const previouslySelected = document.querySelector('.tile-obj.selected');
+                if (previouslySelected) previouslySelected.classList.remove('selected');
+                selectedValue = null;
+                selectedTileSlot = null;
+            } else {
+                // 2. กดยืนยันหลังจากเลือกเบี้ยเสร็จแล้ว
+                const targetTiles = document.querySelectorAll('.tile-obj.swap-intent');
+                if (targetTiles.length === 0) {
+                    // ถ้าไม่ได้เลือกตัวไหนไว้เลย ให้ยกเลิกโหมด
+                    cancelExchangeMode();
+                    return;
+                }
+
+                // สุ่มเบี้ยใหม่ทดแทนในช่องเดิมที่เลือกไว้
+                targetTiles.forEach(tile => {
+                    const slot = tile.parentElement;
+                    const randomVal = tilePool[Math.floor(Math.random() * tilePool.length)];
+                    slot.innerHTML = createTileHTML(randomVal);
+                    slot.onclick = () => {
+                        if(activePlayer !== myPlayerNumber) return;
+                        selectTile(slot, randomVal);
+                    };
+                });
+
+                const count = targetTiles.length;
+                cancelExchangeMode();
+
+                // 3. ส่งสัญญาณไปให้ Server เพื่อสลับเปลี่ยนเทิร์นไปยังคู่แข่งทันที
+                socket.emit('exchange-turn', { nextPlayer: myPlayerNumber === 1 ? 2 : 1 });
+                alert(`🔄 เปลี่ยนเบี้ยจำนวน ${count} ตัวสำเร็จ และข้ามเทิร์นของคุณแล้ว!`);
+            }
+        }
+
+        function cancelExchangeMode() {
+            isExchangeMode = false;
+            const btn = document.getElementById('btn-exchange');
+            btn.innerText = "เปลี่ยนเบี้ย";
+            btn.classList.remove('active');
+            document.querySelectorAll('.tile-obj.swap-intent').forEach(t => t.classList.remove('swap-intent'));
+        }
+
+        // ================ ระบบการเชื่อมต่อ Online เหมือนเดิม ================
         socket.on('assign-player', (role) => {
             myPlayerNumber = role;
             const roleText = document.getElementById('my-role');
@@ -259,7 +335,6 @@
             document.getElementById('p1-info').classList.toggle('active', activePlayer === 1);
             document.getElementById('p2-info').classList.toggle('active', activePlayer === 2);
 
-            // อัปเดตกระดานให้ตรงกับที่เซิร์ฟเวอร์ส่งมา
             for (let r = 0; r < 15; r++) {
                 for (let c = 0; c < 15; c++) {
                     const serverCell = serverState.board[r][c];
@@ -269,7 +344,6 @@
                         localCell.innerHTML = createTileHTML(serverCell.val);
                         localCell.classList.add('has-tile');
                     } else {
-                        // คงสภาพช่องคะแนนพิเศษเดิมไว้ถ้าไม่มีเบี้ยทับ
                         if (!currentTurnPlaced.some(t => t.row === r && t.col === c)) {
                             localCell.classList.remove('has-tile');
                             const originalInfo = getCellType(r, c);
@@ -279,42 +353,6 @@
                 }
             }
         });
-
-        function validateEquationSequence(seq) {
-            let isOpSymbol = (v) => ['+', '-', 'x', '÷', '='].includes(v);
-            for (let i = 0; i < seq.length - 1; i++) {
-                if (!isOpSymbol(seq[i].val) && !isOpSymbol(seq[i+1].val)) {
-                    if (seq[i].val.length > 1 || seq[i+1].val.length > 1) return { valid: false, msg: `❌ ห้ามนำเบี้ยหลักสิบมาต่อผสมเลขโดด!` };
-                }
-            }
-            let tokens = []; let currentNum = "";
-            for (let i = 0; i < seq.length; i++) {
-                if (isOpSymbol(seq[i].val)) {
-                    if (currentNum !== "") { tokens.push(currentNum); currentNum = ""; }
-                    tokens.push(seq[i].val);
-                } else { currentNum += seq[i].val; }
-            }
-            if (currentNum !== "") tokens.push(currentNum);
-            if (!tokens.includes('=')) return { valid: false, msg: `❌ รูปประโยคไม่มีเครื่องหมายเท่ากับ "="` };
-            
-            let sides = []; let currentSide = [];
-            for (let t of tokens) {
-                if (t === '=') { if (currentSide.length === 0) return { valid: false }; sides.push(currentSide); currentSide = []; }
-                else { currentSide.push(t); }
-            }
-            sides.push(currentSide);
-
-            let sideValues = [];
-            for (let side of sides) {
-                let jsExpr = side.map(t => t === 'x' ? '*' : (t === '÷' ? '/' : t)).join('');
-                if (/\/0(?!\d)/.test(jsExpr)) return { valid: false, msg: `❌ ห้ามหารด้วย 0!` };
-                try {
-                    let val = new Function(`return (${jsExpr})`)();
-                    sideValues.push(val);
-                } catch(e) { return { valid: false }; }
-            }
-            return { valid: sideValues.every(v => Math.abs(v - sideValues[0]) < 1e-9) };
-        }
 
         function submitTurn() {
             if (activePlayer !== myPlayerNumber) return;
@@ -327,12 +365,9 @@
 
             if (!isHorizontal && !isVertical) { alert("❌ ต้องวางเบี้ยเป็นแนวเส้นตรงเดียวกัน!"); recallTiles(); return; }
 
-            // (ตัดโค้ดส่วนคำนวณคะแนนย่อยออกเพื่อความกระชับ แต่กลไกการคิดแต้มสะสมเหมือนตาที่แล้วทุกประการ)
-            let totalTurnScore = 15; // ตัวอย่างแต้มที่คำนวณได้สำเร็จจากประโยคยาว
-
+            let totalTurnScore = 15; 
             scores[myPlayerNumber] += totalTurnScore;
 
-            // สกัดสถานะกระดานปัจจุบันเพื่อแพ็กส่งเซิร์ฟเวอร์
             let exportBoard = Array(15).fill(null).map((_, r) => Array(15).fill(null).map((_, c) => {
                 const cell = document.getElementById(`cell-${r}-${c}`);
                 return {
@@ -341,7 +376,6 @@
                 };
             }));
 
-            // ส่งสัญญาณขึ้นไปอัปเดตบน Server
             socket.emit('submit-turn', {
                 board: exportBoard,
                 scores: scores,
