@@ -102,6 +102,109 @@
         .btn.pass { background: linear-gradient(135deg, #64748b 0%, #475569 100%); }
         .btn.exchange { background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); }
         .btn.exchange.active { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        /* คอนเทนเนอร์เบื้องหลัง (Overlay) แบบโปร่งแสงและเบลอพื้นหลัง */
+.blank-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: none; /* ซ่อนไว้ก่อน เริ่มทำงานผ่าน JS */
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.2s ease-out;
+}
+
+/* กล่องหน้าต่าง Pop-up */
+.blank-modal-content {
+    background: #1e1e24; /* โทนมืดเข้ากับธีมหลัก */
+    color: #ffffff;
+    padding: 24px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 480px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transform: scale(0.9);
+    animation: scaleUp 0.2s ease-out forwards;
+}
+
+.blank-modal-header h3 {
+    margin: 0 0 4px 0;
+    font-size: 1.4rem;
+    color: #ffca28; /* สีเหลืองทองเด่นตา */
+}
+
+.blank-modal-header p {
+    margin: 0 0 20px 0;
+    font-size: 0.85rem;
+    color: #b0bec5;
+}
+
+.blank-section-title {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #81d4fa;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* การจัดวางปุ่มแบบ Grid */
+.blank-options-grid {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.numbers-grid {
+    grid-template-columns: repeat(6, 1fr); /* เรียงตัวเลขแถวละ 6 ปุ่ม */
+}
+
+.operators-grid {
+    grid-template-columns: repeat(5, 1fr); /* เครื่องหมายแถวละ 5 ปุ่ม */
+    margin-bottom: 0;
+}
+
+/* ดีไซน์ปุ่มตัวเลือก */
+.blank-btn {
+    background: #2e2f38;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.05);
+    padding: 10px 0;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.blank-btn:hover {
+    background: #43a047; /* สีเขียวตอนเล็ง */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(67, 160, 71, 0.4);
+}
+
+/* แยกสีปุ่มเครื่องหมายให้เด่นชัด */
+.op-btn {
+    background: #37474f;
+    color: #ffb74d;
+}
+.op-btn:hover {
+    background: #ef6c00;
+    box-shadow: 0 4px 10px rgba(239, 108, 0, 0.4);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; } to { opacity: 1; }
+}
+@keyframes scaleUp {
+    from { transform: scale(0.9); } to { transform: scale(1); }
+}
     </style>
 </head>
 <body>
@@ -161,6 +264,27 @@
             <button class="btn recall" onclick="recallTiles()">เรียกคืน</button>
             <button class="btn" onclick="submitTurn()">ส่งสมการ</button>
         </div>
+        <div id="blank-modal" class="blank-modal-overlay">
+    <div class="blank-modal-content">
+        <div class="blank-modal-header">
+            <h3>✨ ตั้งค่าเบี้ย BLANK</h3>
+            <p>เลือกตัวเลขหรือเครื่องหมายที่ต้องการแปลงร่าง (คะแนนเบี้ยนี้จะเป็น 0)</p>
+        </div>
+        
+        <div class="blank-section-title">ตัวเลข (Numbers)</div>
+        <div class="blank-options-grid numbers-grid" id="blank-numbers-container">
+            </div>
+
+        <div class="blank-section-title">เครื่องหมาย (Operators)</div>
+        <div class="blank-options-grid operators-grid">
+            <button class="blank-btn op-btn" onclick="selectBlankValue('+')">+</button>
+            <button class="blank-btn op-btn" onclick="selectBlankValue('-')">-</button>
+            <button class="blank-btn op-btn" onclick="selectBlankValue('x')">x</button>
+            <button class="blank-btn op-btn" onclick="selectBlankValue('÷')">÷</button>
+            <button class="blank-btn op-btn" onclick="selectBlankValue('=')">=</button>
+        </div>
+    </div>
+</div>
     </div>
 
     <script>
