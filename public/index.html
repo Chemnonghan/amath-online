@@ -157,6 +157,48 @@
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes scaleUp { from { transform: scale(0.9); } to { transform: scale(1); } }
+    
+        /* สไตล์ของป็อปอัปแจ้งเตือนเทิร์น */
+.turn-toast {
+    position: fixed;
+    top: -100px; /* ซ่อนไว้ด้านบนนอกจอ */
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ff9800, #f44336);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    font-family: 'Kanit', sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 9999;
+    transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* คลาสสำหรับสั่งให้เด้งแสดงตัว */
+.turn-toast.show {
+    top: 30px; /* เลื่อนลงมาในระยะที่เห็นชัด */
+    opacity: 1;
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toast-icon {
+    font-size: 22px;
+    animation: bounce 0.5s infinite alternate;
+}
+
+@keyframes bounce {
+    from { transform: scale(1); }
+    to { transform: scale(1.2); }
+}
     </style>
 </head>
 <body>
@@ -237,6 +279,13 @@
             </div>
         </div>
     </div>
+    <div id="turn-toast" class="turn-toast">
+    <div class="toast-content">
+        <span class="toast-icon">🎯</span>
+        <p>ถึงตาของคุณแล้ว! วางสมการเลย</p>
+    </div>
+</div>
+
 
     <script>
         const socket = io(window.location.origin || 'http://localhost:3000');
