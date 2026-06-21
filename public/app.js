@@ -84,3 +84,79 @@ socket.on('receive-starting-tiles', (tiles) => {
     renderPlayerTiles(tiles);
 });
 
+// 1. ตัวแปรเก็บสถานะผู้เล่นเทิร์นล่าสุดในเครื่อง Client (ใช้เช็คเพื่อไม่ให้เสียงดังซ้ำ)
+let lastActivePlayerLocal = null; 
+
+// 2. ฟังก์ชันสังเคราะห์เสียงแจ้งเตือน (Web Audio API) ไม่ต้องพึ่งพาไฟล์ MP3
+function playTurnNotificationSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // เสียงตัวที่ 1 (เสียงโน้ตต่ำ)
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // โน้ต C5
+        gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(audioCtx.currentTime);
+        osc1.stop(audioCtx.currentTime + 0.15);
+
+        // เสียงตัวที่ 2 (เสียงโน้ตสูงขึ้นตามหลังมาเล็กน้อย เพื่อความไพเราะแบบสากล)
+        setTimeout(() => {
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime); // โน้ต E5
+            gain2.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.start(audioCtx.currentTime);
+            osc2.stop(audioCtx.currentTime + 0.25);
+        }, 100);
+
+    } catch (error) {
+        console.log("บราว์เซอร์บล็อกเสียงชั่วคราวเนื่องจากผู้เล่นยังไม่ได้คลิกหน้าจอ: ", error);
+    }
+}
+
+// 💡 หมายเหตุ: หากคุณครูอยากเปลี่ยนไปใช้ไฟล์ MP3 ของตัวเองแทน ให้เปลี่ยนฟังก์ชันข้างบนเป็น:
+/*
+function playTurnNotificationSound() {
+    const audio = new Audio('/sounds/your-turn-sound.mp3');
+    audio.play().catch(err => console.log("Audio play blocked"));
+}
+*/
+
+// 3. ฟังก์ชันสั่งเปิด-ปิด ป็อปอัป Toast แจ้งเตือน
+function triggerTurnToast() {
+    const toast = document.getElementById("turn-toast");
+    if (!toast) return;
+
+    toast.classList.add("show");
+
+    // แสดงค้างไว้ 3.5 วินาทีแล้วดึงกลับขึ้นไปซ่อนตามเดิม
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3500);
+}
+
+// 4. ประกอบลอจิกเข้ากับตัวรับข้อมูลบอร์ดเกมจาก Server
+socket.on('update-game', (gameState) => {
+    // ... โค้ดเรนเดอร์กระดานและคะแนนเดิมของคุณครูทั้งหมด ...
+    
+    // 🔥 เช็คเงื่อนไขแจ้งเตือน: 
+    // เกมยังไม่จบ + เป็นเทิร์นของเรา + เทิร์นเพิ่งเปลี่ยนมาที่เราสดๆ ร้อนๆ (เช็คจากตัวแปร Local)
+    if (!gameState.isGameOver && gameState.activePlayer === myRole && lastActivePlayerLocal !== myRole) {
+        
+        playTurnNotificationSound(); // สั่งยิงเสียงแจ้งเตือน
+        triggerTurnToast();          // สั่งเด้ง Pop up แจ้งข้อความ
+    }
+
+    // อัปเดตสถานะเทิร์นล่าสุดในฝั่งเครื่องตนเองเก็บไว้ใช้เปรียบเทียบในรอบถัดไป
+    lastActivePlayerLocal = gameState.activePlayer;
+});
+
