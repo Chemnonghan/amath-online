@@ -71,3 +71,16 @@ function handleConfirmTurn() {
     // 🧹 รีเซ็ตอาร์เรย์ประวัติการแปลงร่างของเทิร์นนี้เพื่อรอเทิร์นใหม่
     currentTurnBlankTransformations = [];
 }
+
+// ฟังก์ชันเรียกทำงานเมื่อกดปุ่ม Rematch บนหน้าจอ UI
+function handleRequestRematch() {
+    socket.emit('request-rematch');
+}
+
+// ตัวอย่างการอัปเดตฟังก์ชันรับข้อมูลเบี้ย เพื่อรองรับทั้งตอนเปิดเกมปกติและตอนสั่ง Rematch
+socket.on('receive-starting-tiles', (tiles) => {
+    // เคลียร์เบี้ยเก่าบนชั้นวางฝั่ง Client ทิ้งทั้งหมดก่อน แล้ววางเบี้ย 8 ตัวใหม่ลงไปแทน
+    clearClientTileRack(); 
+    renderPlayerTiles(tiles);
+});
+
