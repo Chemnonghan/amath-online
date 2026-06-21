@@ -79,7 +79,6 @@
         .cell.x2-num { background-color: var(--color-2x-num); color: white; }
         .cell.star { background-color: var(--color-star); color: white; font-size: 0.8rem; }
         
-        /* ดีไซน์ตัวเบี้ยมาตรฐาน */
         .tile-obj {
             position: relative; width: 100%; height: 100%;
             background: linear-gradient(135deg, #ffffff 0%, var(--tile-bg) 100%);
@@ -90,7 +89,6 @@
         .cell .tile-obj .val { font-size: 0.95rem; }
         .tile-obj .pt { position: absolute; bottom: 1px; right: 3px; font-size: 0.5rem; color: #78350f; }
         
-        /* ✨ สไตล์เพิ่มเติมสำหรับเบี้ย BLANK (กรอบสีทองออร่าเพื่อให้ผู้เล่นแยกแยะได้ง่าย) */
         .tile-obj.is-blank {
             border: 2px solid #ffb300;
             background: linear-gradient(135deg, #fffde7 0%, #fff9c4 100%);
@@ -114,32 +112,13 @@
         .btn.exchange { background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); }
         .btn.exchange.active { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
         
-        /* 👑สไตล์ Pop-up หน้าต่างเลือกค่าเบี้ย BLANK */
         .blank-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            animation: fadeIn 0.2s ease-out;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 9999; animation: fadeIn 0.2s ease-out;
         }
         .blank-modal-content {
-            background: #1e1e24;
-            color: #ffffff;
-            padding: 24px;
-            border-radius: 16px;
-            width: 95%;
-            max-width: 460px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transform: scale(0.9);
-            animation: scaleUp 0.2s ease-out forwards;
+            background: #1e1e24; color: #ffffff; padding: 24px; border-radius: 16px; width: 95%; max-width: 460px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.1); transform: scale(0.9); animation: scaleUp 0.2s ease-out forwards;
         }
         .blank-modal-header h3 { margin: 0 0 4px 0; font-size: 1.3rem; color: #ffca28; }
         .blank-modal-header p { margin: 0 0 20px 0; font-size: 0.8rem; color: #cbd5e1; }
@@ -155,50 +134,21 @@
         .op-btn { background: #37474f; color: #ffb74d; }
         .op-btn:hover { background: #ef6c00; box-shadow: 0 4px 10px rgba(239, 108, 0, 0.4); }
 
+        /* 🎯 สไตล์ของป็อปอัปแจ้งเตือนเทิร์น */
+        .turn-toast {
+            position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff9800, #f44336); color: white;
+            padding: 12px 28px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 16px; font-weight: bold; z-index: 9999;
+            transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s; opacity: 0; pointer-events: none;
+        }
+        .turn-toast.show { top: 20px; opacity: 1; }
+        .toast-content { display: flex; align-items: center; gap: 10px; }
+        .toast-icon { font-size: 20px; animation: bounce 0.5s infinite alternate; }
+
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes scaleUp { from { transform: scale(0.9); } to { transform: scale(1); } }
-    
-        /* สไตล์ของป็อปอัปแจ้งเตือนเทิร์น */
-.turn-toast {
-    position: fixed;
-    top: -100px; /* ซ่อนไว้ด้านบนนอกจอ */
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, #ff9800, #f44336);
-    color: white;
-    padding: 15px 30px;
-    border-radius: 50px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    font-family: 'Kanit', sans-serif;
-    font-size: 18px;
-    font-weight: bold;
-    z-index: 9999;
-    transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* คลาสสำหรับสั่งให้เด้งแสดงตัว */
-.turn-toast.show {
-    top: 30px; /* เลื่อนลงมาในระยะที่เห็นชัด */
-    opacity: 1;
-}
-
-.toast-content {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.toast-icon {
-    font-size: 22px;
-    animation: bounce 0.5s infinite alternate;
-}
-
-@keyframes bounce {
-    from { transform: scale(1); }
-    to { transform: scale(1.2); }
-}
+        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.2); } }
     </style>
 </head>
 <body>
@@ -258,6 +208,15 @@
             <button class="btn recall" onclick="recallTiles()">เรียกคืน</button>
             <button class="btn" onclick="submitTurn()">ส่งสมการ</button>
         </div>
+
+        <button class="btn" id="btn-rematch" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); display: none; margin-top: 4px; width: 100%; max-width: 440px; padding: 14px;" onclick="handleRequestRematch()">เสนอศึกล้างตา (Rematch)</button>
+    </div>
+
+    <div id="turn-toast" class="turn-toast">
+        <div class="toast-content">
+            <span class="toast-icon">🎯</span>
+            <p>ถึงตาของคุณแล้ว! วางสมการเลย</p>
+        </div>
     </div>
 
     <div id="blank-modal" class="blank-modal-overlay">
@@ -279,17 +238,18 @@
             </div>
         </div>
     </div>
-    <div id="turn-toast" class="turn-toast">
-    <div class="toast-content">
-        <span class="toast-icon">🎯</span>
-        <p>ถึงตาของคุณแล้ว! วางสมการเลย</p>
-    </div>
-</div>
-
 
     <script>
         const socket = io(window.location.origin || 'http://localhost:3000');
         const board = document.getElementById('board');
+        
+        // 🔒 ระบบล็อกคีย์ผู้เล่นประจำเครื่องถาวร (ผูกรอยต่อเมื่อหลุดหรือยุบหน้าจอ)
+        let userId = localStorage.getItem('amath_user_id');
+        if (!userId) {
+            userId = 'usr_' + Math.random().toString(36).substring(2, 11) + Date.now().toString().slice(-4);
+            localStorage.setItem('amath_user_id', userId);
+        }
+
         let myPlayerNumber = null;
         let activePlayer = 1;
         let scores = { 1: 0, 2: 0 };
@@ -297,12 +257,11 @@
         let selectedValue = null;
         let currentTurnPlaced = [];
         let isExchangeMode = false;
-        
-        // 💾 Context สำหรับจังหวะเลือกค่า BLANK ค้างไว้
         let activeBlankContext = null; 
-
-        // 🎲 เพิ่มสระหรือตัวเลือก 'BLANK' เข้าสู่ Pool สุ่ม
-        const tilePool = ['0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','+','-','x','÷','=','BLANK'];
+        
+        // 🗃️ คลังข้อมูลเบี้ยในมือที่ Sync มาจากกองเบี้ยหลักบน Server
+        let myHand = [];
+        let lastActivePlayerLocal = null; 
 
         function getTilePoint(val) {
             if (val === 'BLANK') return 0;
@@ -351,11 +310,9 @@
                     if (selectedValue !== null && !cell.classList.contains('has-tile')) {
                         const originalInfo = { text: cell.innerText, html: cell.innerHTML, classes: [...cell.classList] };
                         
-                        // 🌟 ดักจับถ้าเบี้ยที่กำลังเลือกวางคือ BLANK
                         if (selectedValue === 'BLANK') {
                             triggerBlankSelection(cell, r, c, selectedTileSlot.dataset.index, originalInfo);
                         } else {
-                            // การวางหมากแบบตัวเลข/เครื่องหมายปกติ
                             cell.innerHTML = createTileHTML(selectedValue);
                             cell.classList.add('has-tile');
                             currentTurnPlaced.push({
@@ -374,7 +331,6 @@
             }
         }
 
-        // 🛠️ ฟังก์ชันเจเนอเรต Element ตัวเบี้ย (รองรับสถานะ BLANK)
         function createTileHTML(value, isBlank = false) {
             if (value === 'BLANK') isBlank = true;
             const displayPoint = isBlank ? 0 : getTilePoint(value);
@@ -387,23 +343,22 @@
             const input = document.getElementById('room-input');
             const roomId = input.value.trim();
             if (!roomId) { alert("กรุณากรอกรหัสห้องก่อนครับ!"); return; }
-            socket.emit('join-room', roomId);
+            // 📡 ส่งพ่วงทั้งรหัสห้องและไอดีประจำเครื่องของผู้เล่นเข้าสู่ Server
+            socket.emit('join-room', { roomId, userId });
         }
 
-        function fillRack() {
-            document.querySelectorAll('#rack .tile-slot').forEach(slot => {
-                if (slot.innerHTML === '') {
-                    const randomVal = tilePool[Math.floor(Math.random() * tilePool.length)];
-                    slot.innerHTML = createTileHTML(randomVal);
+        // 🔄 ฟังก์ชันเรนเดอร์แท่นวางเบี้ยจากอาเรย์คลังจริง (`myHand`) ไม่สุ่มเดาเองแล้ว
+        function renderRackFromHand() {
+            const slots = document.querySelectorAll('#rack .tile-slot');
+            slots.forEach((slot, index) => {
+                slot.innerHTML = '';
+                slot.onclick = null;
+                if (index < myHand.length && myHand[index]) {
+                    const tile = myHand[index];
+                    slot.innerHTML = createTileHTML(tile.value);
                     slot.onclick = () => {
                         if (activePlayer !== myPlayerNumber) return;
-                        const tileObj = slot.querySelector('.tile-obj');
-                        if (!tileObj) return;
-                        
-                        // ตรวจสอบว่าเบี้ยนั้นคือเบี้ย BLANK หรือไม่
-                        const isBlank = tileObj.getAttribute('data-is-blank') === 'true' || tileObj.querySelector('.val').innerText === 'BLANK';
-                        const currentVal = isBlank ? 'BLANK' : tileObj.querySelector('.val').innerText;
-                        selectTile(slot, currentVal);
+                        selectTile(slot, tile.value);
                     };
                 }
             });
@@ -430,8 +385,6 @@
                 item.cellElement.innerHTML = '';
                 item.cellElement.classList.remove('has-tile');
                 const slot = document.querySelector(`#rack .tile-slot[data-index="${item.slotIndex}"]`);
-                
-                // 🔄 ส่งเบี้ยคืนแท่น: ถ้าดั้งเดิมเป็น BLANK ให้คืนสภาพเป็น 'BLANK'
                 const originalValue = item.isBlank ? 'BLANK' : item.value;
                 slot.innerHTML = createTileHTML(originalValue);
                 slot.onclick = () => selectTile(slot, originalValue);
@@ -454,26 +407,33 @@
                 selectedValue = null;
                 selectedTileSlot = null;
             } else {
-                const targetTiles = document.querySelectorAll('.tile-obj.swap-intent');
-                if (targetTiles.length === 0) { cancelExchangeMode(); return; }
-                targetTiles.forEach(tile => {
-                    const slot = tile.parentElement;
-                    const randomVal = tilePool[Math.floor(Math.random() * tilePool.length)];
-                    slot.innerHTML = createTileHTML(randomVal);
-                    slot.onclick = () => {
-                        if (activePlayer !== myPlayerNumber) return;
-                        const tObj = slot.querySelector('.tile-obj');
-                        const isB = tObj.getAttribute('data-is-blank') === 'true' || tObj.querySelector('.val').innerText === 'BLANK';
-                        selectTile(slot, isB ? 'BLANK' : tObj.querySelector('.val').innerText);
-                    };
+                let exchangeIndices = [];
+                let oldTiles = [];
+                
+                document.querySelectorAll('#rack .tile-slot').forEach((slot, index) => {
+                    if (slot.querySelector('.tile-obj.swap-intent')) {
+                        exchangeIndices.push(index);
+                        oldTiles.push(myHand[index]);
+                    }
                 });
-                const count = targetTiles.length;
-                cancelExchangeMode();
+
+                if (exchangeIndices.length === 0) { cancelExchangeMode(); return; }
+                
+                // สกัดเบี้ยตัวที่เหลือเพื่อส่งมอบต่อให้ Server
+                let remainingHand = myHand.filter((_, idx) => !exchangeIndices.includes(idx));
+                const count = exchangeIndices.length;
+                
                 socket.emit('exchange-turn', {
                     nextPlayer: myPlayerNumber === 1 ? 2 : 1,
-                    count: count
+                    count: count,
+                    oldTiles: oldTiles,
+                    currentHand: remainingHand,
+                    playerNum: myPlayerNumber
                 });
-                alert(`🔄 เปลี่ยนเบี้ย ${count} ตัวเรียบร้อย และข้ามเทิร์นแล้ว!`);
+                
+                myHand = remainingHand; 
+                cancelExchangeMode();
+                alert(`🔄 ส่งเปลี่ยนเบี้ย ${count} ตัวลงถุงแล้ว!`);
             }
         }
 
@@ -485,8 +445,45 @@
             document.querySelectorAll('.tile-obj.swap-intent').forEach(t => t.classList.remove('swap-intent'));
         }
 
-        // ================== ระบบจัดการช่องหน้าต่าง Pop-up BLANK ==================
-        
+        // ================== ระบบสังเคราะห์เสียงบี๊บแจ้งเตือน (Web Audio) ==================
+        function playTurnNotificationSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                gain1.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+                osc1.connect(gain1); gain1.connect(audioCtx.destination);
+                osc1.start(); osc1.stop(audioCtx.currentTime + 0.12);
+
+                setTimeout(() => {
+                    const osc2 = audioCtx.createOscillator();
+                    const gain2 = audioCtx.createGain();
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+                    gain2.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.22);
+                    osc2.connect(gain2); gain2.connect(audioCtx.destination);
+                    osc2.start(); osc2.stop(audioCtx.currentTime + 0.22);
+                }, 90);
+            } catch (e) { console.log("Audio contexts blocked: ", e); }
+        }
+
+        function triggerTurnToast() {
+            const toast = document.getElementById("turn-toast");
+            if (!toast) return;
+            toast.classList.add("show");
+            setTimeout(() => { toast.classList.remove("show"); }, 3200);
+        }
+
+        function handleRequestRematch() {
+            socket.emit('request-rematch');
+        }
+
+        // ================== ระบบตั้งค่าช่องหน้าต่าง Pop-up BLANK ==================
         document.addEventListener("DOMContentLoaded", () => {
             const container = document.getElementById("blank-numbers-container");
             if (container) {
@@ -510,11 +507,9 @@
             if (!activeBlankContext) return;
             const { cellElement, row, col, slotIndex, originalInfo } = activeBlankContext;
 
-            // วาดเบี้ยลงช่องตาราง แสดงผลเป็นค่าที่เลือก แต่คะแนนกำกับเป็น 0 แต้มตามกติกา
             cellElement.innerHTML = createTileHTML(chosenValue, true);
             cellElement.classList.add('has-tile');
 
-            // บันทึกเข้าขบวนอาเรย์ที่กำลังวางเทิร์นนี้
             currentTurnPlaced.push({
                 row: row, col: col, value: 'BLANK', transformedValue: chosenValue, isBlank: true,
                 slotIndex: slotIndex,
@@ -525,7 +520,7 @@
             activeBlankContext = null;
         }
 
-        // ================ Socket Events ================
+        // ================ Socket Listener Events ================
 
         socket.on('assign-player', (data) => {
             myPlayerNumber = data.role;
@@ -538,8 +533,22 @@
                 roleText.innerText = data.role === 1
                     ? `🔴 ห้อง: [${data.roomId}] | คุณคือ Player 1`
                     : `🔵 ห้อง: [${data.roomId}] | คุณคือ Player 2`;
-                fillRack();
             }
+        });
+
+        // 📥 รับกระจายเบี้ยตั้งต้น (หรือชุดคืนสภาพเมื่อหลุดเชื่อมต่อกลับเข้ามา)
+        socket.on('receive-starting-tiles', (tiles) => {
+            myHand = tiles;
+            currentTurnPlaced = [];
+            selectedValue = null;
+            selectedTileSlot = null;
+            renderRackFromHand();
+        });
+
+        // 📥 รับแจกเบี้ยจั่วเพิ่มเติมเข้าสู่คลัง
+        socket.on('receive-new-tiles', (newTiles) => {
+            myHand = [...myHand, ...newTiles];
+            renderRackFromHand();
         });
 
         socket.on('update-game', (serverState) => {
@@ -549,6 +558,21 @@
             document.getElementById('p2-score').innerText = scores[2];
             document.getElementById('p1-info').classList.toggle('active', activePlayer === 1);
             document.getElementById('p2-info').classList.toggle('active', activePlayer === 2);
+
+            // แสดง/ซ่อนปุ่มรีแมตช์ตามสถานะเกมจบชิงชัย
+            const rematchBtn = document.getElementById('btn-rematch');
+            if (serverState.isGameOver) {
+                rematchBtn.style.display = 'block';
+            } else {
+                rematchBtn.style.display = 'none';
+            }
+
+            // 🎯 เช็คเงื่อนไขยิงเสียงแจ้งเตือนและป็อปอัปข้อความ (สกัดไม่ให้ดังซ้ำ)
+            if (!serverState.isGameOver && serverState.activePlayer === myPlayerNumber && lastActivePlayerLocal !== myPlayerNumber) {
+                playTurnNotificationSound();
+                triggerTurnToast();
+            }
+            lastActivePlayerLocal = serverState.activePlayer;
 
             const logBox = document.getElementById('history-log');
             if (serverState.history && serverState.history.length > 0) {
@@ -567,7 +591,6 @@
                     const serverCell = serverState.board[r][c];
                     const localCell = document.getElementById(`cell-${r}-${c}`);
                     if (serverCell.hasTile) {
-                        // ดึงการแสดงผลเบี้ยหลัก รองรับสถานะเบี้ย BLANK จากกระดานฝั่งเซิร์ฟเวอร์
                         localCell.innerHTML = createTileHTML(serverCell.val, serverCell.isBlank);
                         localCell.classList.add('has-tile');
                     } else {
@@ -612,7 +635,6 @@
             let baseR = rows[0];
             let baseC = cols[0];
 
-            // ส่วน A: คะแนนจากเส้นหลัก
             let mainLineCells = [];
             if (dir === 'horizontal') {
                 let startC = baseC;
@@ -635,7 +657,6 @@
                 let tileObj = cellEl.querySelector('.tile-obj');
                 let val = tileObj.querySelector('.val').innerText;
                 
-                // 💡 ปรับปรุงเช็คแต้มดิบ: ถ้ามีแอตทริบิวต์ data-is-blank จะคำนวณเป็น 0 แต้มทันที
                 let isBlank = tileObj.getAttribute('data-is-blank') === 'true';
                 let basePt = isBlank ? 0 : getTilePoint(val);
                 
@@ -651,7 +672,6 @@
             });
             totalTurnScore += (mainLineSum * mainLineEqMultiplier);
 
-            // ส่วน B: คะแนนจากสมการแนวตัด
             currentTurnPlaced.forEach(newTile => {
                 let r = parseInt(newTile.row);
                 let c = parseInt(newTile.col);
@@ -681,7 +701,6 @@
                         let tileObj = cellEl.querySelector('.tile-obj');
                         let val = tileObj.querySelector('.val').innerText;
                         
-                        // 💡 ปรับปรุงเช็คแต้มดิบในแนวตัดสำหรับเบี้ย BLANK
                         let isBlank = tileObj.getAttribute('data-is-blank') === 'true';
                         let basePt = isBlank ? 0 : getTilePoint(val);
                         
@@ -701,7 +720,6 @@
             scores[myPlayerNumber] += totalTurnScore;
             alert(`🎉 คุณได้คะแนนในเทิร์นนี้: ${totalTurnScore} แต้ม!`);
 
-            // แพ็กข้อมูลอาเรย์สำหรับส่งมอบให้ระบบ Server ซิงก์คู่แข่ง
             let exportBoard = Array(15).fill(null).map((_, r) =>
                 Array(15).fill(null).map((_, c) => {
                     const cell = document.getElementById(`cell-${r}-${c}`);
@@ -710,26 +728,40 @@
                     return {
                         hasTile: hasTile,
                         val: hasTile ? tileObj.querySelector('.val').innerText : '',
-                        isBlank: hasTile ? (tileObj.getAttribute('data-is-blank') === 'true') : false // 🚀 ส่งค่าแฟล็กไปบอกฝั่งเซิร์ฟเวอร์ด้วย
+                        isBlank: hasTile ? (tileObj.getAttribute('data-is-blank') === 'true') : false
                     };
                 })
             );
+
+            // 📐 คำนวณเบี้ยที่เหลือในมือหลังวาง เพื่อสรุปนำส่งคลัง Server
+            let usedIndices = currentTurnPlaced.map(t => parseInt(t.slotIndex));
+            let remainingHand = myHand.filter((_, idx) => !usedIndices.includes(idx));
 
             socket.emit('submit-turn', {
                 board: exportBoard,
                 scores: scores,
                 nextPlayer: myPlayerNumber === 1 ? 2 : 1,
-                scoreEarned: totalTurnScore
+                scoreEarned: totalTurnScore,
+                playerNum: myPlayerNumber,
+                tilesUsedCount: currentTurnPlaced.length,
+                currentHand: remainingHand,
+                clientTilesLeftCount: remainingHand.length,
+                blankTransformations: currentTurnPlaced.filter(t => t.isBlank).map(t => ({
+                    toValue: t.transformedValue, row: t.row, col: t.col
+                }))
             });
 
+            myHand = remainingHand; 
             currentTurnPlaced = [];
-            fillRack();
         }
 
         function passTurn() {
             if (activePlayer !== myPlayerNumber) return;
             recallTiles();
-            socket.emit('pass-turn', { nextPlayer: myPlayerNumber === 1 ? 2 : 1 });
+            socket.emit('pass-turn', { 
+                nextPlayer: myPlayerNumber === 1 ? 2 : 1,
+                playerNum: myPlayerNumber 
+            });
         }
     </script>
 </body>
